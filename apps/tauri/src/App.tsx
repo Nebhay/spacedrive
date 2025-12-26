@@ -28,6 +28,7 @@ import { SpacedropWindow } from "./routes/Spacedrop";
 import { platform } from "./platform";
 import { initializeContextMenuHandler } from "./contextMenu";
 import { initializeKeybindGlobal } from "./keybinds";
+import TitleBar from "./components/TitleBar";
 
 function App() {
 	const [client, setClient] = useState<SpacedriveClient | null>(null);
@@ -293,7 +294,12 @@ function App() {
 
 	return (
 		<PlatformProvider platform={platform}>
-			<Explorer client={client} />
+			<div className="bg-app text-white h-screen overflow-hidden">
+				<TitleBar />
+				<div className="sd-content-offset h-full">
+					<Explorer client={client} />
+				</div>
+			</div>
 		</PlatformProvider>
 	);
 }
