@@ -1,7 +1,7 @@
 use file_opening::{FileOpener, OpenResult, OpenWithApp};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use windows::{
-	core::*, Win32::System::Com::*, Win32::UI::Shell::*,
+	core::*, Win32::Foundation::*, Win32::System::Com::*, Win32::UI::Shell::*,
 	Win32::UI::WindowsAndMessaging::*,
 };
 
@@ -24,7 +24,7 @@ fn ensure_com_initialized() {
 pub struct WindowsFileOpener;
 
 impl FileOpener for WindowsFileOpener {
-	fn get_apps_for_file(&self, path: &Path) -> std::result::Result<Vec<OpenWithApp>, String> {
+	fn get_apps_for_file(&self, path: &Path) -> Result<Vec<OpenWithApp>, String> {
 		ensure_com_initialized();
 
 		let ext = path
@@ -40,7 +40,7 @@ impl FileOpener for WindowsFileOpener {
 		list_apps_for_extension(&ext)
 	}
 
-	fn open_with_default(&self, path: &Path) -> std::result::Result<OpenResult, String> {
+	fn open_with_default(&self, path: &Path) -> Result<OpenResult, String> {
 		ensure_com_initialized();
 
 		let path_str = path.to_string_lossy();
@@ -53,13 +53,13 @@ impl FileOpener for WindowsFileOpener {
 				Ok(OpenResult::Success)
 			} else {
 				Ok(OpenResult::PlatformError {
-					message: format!("ShellExecute failed with code {:?}", result.0),
+					message: format!("ShellExecute failed with code {}", result.0),
 				})
 			}
 		}
 	}
 
-	fn open_with_app(&self, path: &Path, app_id: &str) -> std::result::Result<OpenResult, String> {
+	fn open_with_app(&self, path: &Path, app_id: &str) -> Result<OpenResult, String> {
 		ensure_com_initialized();
 
 		let ext = path
@@ -76,43 +76,33 @@ impl FileOpener for WindowsFileOpener {
 
 		// Find handler by app_id (which is the app name on Windows)
 		unsafe {
-			let handlers = SHAssocEnumHandlers(&HSTRING::from(ext.as_str()), ASSOC_FILTER_RECOMMENDED)
-				.map_err(|e| format!("Failed to enumerate handlers: {}", e))?;
+			let handlers =
+				SHAssocEnumHandlers(&HSTRING::from(ext.as_str()), ASSOC_FILTER_RECOMMENDED)
+					.map_err(|e| e.to_string())?;
 
-			// Iterate over handlers using Next() method
-			loop {
-				let mut handler_buf = [None::<IAssocHandler>];
-				let mut fetched = 0u32;
-				
-				match handlers.Next(&mut handler_buf, Some(&mut fetched as *mut u32)) {
-					Ok(()) if fetched > 0 => {
-						if let Some(handler) = handler_buf[0].take() {
-							let name = handler
-								.GetName()
-								.map_err(|e| format!("Failed to get handler name: {}", e))?
-								.to_string()
-								.map_err(|e| format!("Failed to convert name to string: {}", e))?;
+			for handler in handlers {
+				let handler = handler.map_err(|e| e.to_string())?;
+				let name = handler
+					.GetName()
+					.map_err(|e| e.to_string())?
+					.to_string()
+					.map_err(|e| e.to_string())?;
 
-							if name == app_id {
-								// Create shell item from file path
-								let path_str = path.to_string_lossy();
-								let h_path = HSTRING::from(&*path_str);
+				if name == app_id {
+					// Create shell item from file path
+					let path_str = path.to_string_lossy();
+					let h_path = HSTRING::from(&*path_str);
 
-								let shell_item: IShellItem = SHCreateItemFromParsingName(&h_path, None)
-									.map_err(|e| format!("Failed to create shell item: {}", e))?;
+					let shell_item: IShellItem =
+						SHCreateItemFromParsingName(&h_path, None).map_err(|e| e.to_string())?;
 
-								let data_object: IDataObject = shell_item
-									.BindToHandler(None, &BHID_DataObject)
-									.map_err(|e| format!("Failed to bind to data object: {}", e))?;
+					let data_object: IDataObject = shell_item
+						.BindToHandler(None, &BHID_DataObject)
+						.map_err(|e| e.to_string())?;
 
-								handler.Invoke(&data_object)
-									.map_err(|e| format!("Failed to invoke handler: {}", e))?;
+					handler.Invoke(&data_object).map_err(|e| e.to_string())?;
 
-								return Ok(OpenResult::Success);
-							}
-						}
-					}
-					_ => break, // No more handlers or error
+					return Ok(OpenResult::Success);
 				}
 			}
 
@@ -123,36 +113,25 @@ impl FileOpener for WindowsFileOpener {
 	}
 }
 
-fn list_apps_for_extension(ext: &str) -> std::result::Result<Vec<OpenWithApp>, String> {
+fn list_apps_for_extension(ext: &str) -> Result<Vec<OpenWithApp>, String> {
 	unsafe {
 		let handlers = SHAssocEnumHandlers(&HSTRING::from(ext), ASSOC_FILTER_RECOMMENDED)
-			.map_err(|e| format!("Failed to enumerate handlers: {}", e))?;
+			.map_err(|e| e.to_string())?;
 
 		let mut apps = Vec::new();
-		
-		// Iterate over handlers using Next() method
-		loop {
-			let mut handler_buf = [None::<IAssocHandler>];
-			let mut fetched = 0u32;
-			
-			match handlers.Next(&mut handler_buf, Some(&mut fetched as *mut u32)) {
-				Ok(()) if fetched > 0 => {
-					if let Some(handler) = handler_buf[0].take() {
-						let name = handler
-							.GetName()
-							.map_err(|e| format!("Failed to get handler name: {}", e))?
-							.to_string()
-							.map_err(|e| format!("Failed to convert name to string: {}", e))?;
+		for handler in handlers {
+			let handler = handler.map_err(|e| e.to_string())?;
+			let name = handler
+				.GetName()
+				.map_err(|e| e.to_string())?
+				.to_string()
+				.map_err(|e| e.to_string())?;
 
-						apps.push(OpenWithApp {
-							id: name.clone(),
-							name,
-							icon: None,
-						});
-					}
-				}
-				_ => break, // No more handlers or error
-			}
+			apps.push(OpenWithApp {
+				id: name.clone(),
+				name,
+				icon: None,
+			});
 		}
 
 		apps.sort_by(|a, b| a.name.cmp(&b.name));
