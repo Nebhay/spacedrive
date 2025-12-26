@@ -21,11 +21,11 @@
         "resizable": true,
         "fullscreen": false,
         "hiddenTitle": true,
-        "transparent": true,
+        "transparent": false,
         "center": true,
         "visible": false,
         "dragDropEnabled": true,
-        "decorations": true,
+        "decorations": false,
         "windowEffects": {
           "effects": ["sidebar"],
           "state": "followsWindowActiveState",

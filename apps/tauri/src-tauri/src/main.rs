@@ -1987,9 +1987,12 @@ fn main() {
 			keybinds::get_registered_keybinds
 		])
 		.setup(|app| {
-			// Setup native menu
-			if let Err(e) = setup_menu(app.handle()) {
-				tracing::warn!("Failed to setup menu: {}", e);
+			// Setup native menu (macOS only - Windows doesn't use menu bar)
+			#[cfg(target_os = "macos")]
+			{
+				if let Err(e) = setup_menu(app.handle()) {
+					tracing::warn!("Failed to setup menu: {}", e);
+				}
 			}
 			tracing::info!("Spacedrive Tauri app starting...");
 
