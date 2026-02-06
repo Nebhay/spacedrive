@@ -14,63 +14,63 @@ env:
 
 jobs:
   # Server builds for self-hosting
-  server-build:
-    strategy:
-      matrix:
-        settings:
-          - host: blacksmith-4vcpu-ubuntu-2204
-            target: x86_64-unknown-linux-gnu
-            platform: linux-x86_64
-          - host: blacksmith-4vcpu-ubuntu-2204-arm
-            target: aarch64-unknown-linux-gnu
-            platform: linux-aarch64
-    name: Server - ${{ matrix.settings.platform }}
-    runs-on: ${{ matrix.settings.host }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # server-build:
+  #   strategy:
+  #     matrix:
+  #       settings:
+  #         - host: blacksmith-4vcpu-ubuntu-2204
+  #           target: x86_64-unknown-linux-gnu
+  #           platform: linux-x86_64
+  #         - host: blacksmith-4vcpu-ubuntu-2204-arm
+  #           target: aarch64-unknown-linux-gnu
+  #           platform: linux-aarch64
+  #   name: Server - ${{ matrix.settings.platform }}
+  #   runs-on: ${{ matrix.settings.host }}
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: ./.github/actions/setup-rust
-        with:
-          target: ${{ matrix.settings.target }}
+  #     - name: Setup Rust
+  #       uses: ./.github/actions/setup-rust
+  #       with:
+  #         target: ${{ matrix.settings.target }}
 
-      - name: Install VA-API libraries
-        if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
-        run: sudo apt-get update && sudo apt-get install -y libva-dev libva-drm2
+  #     - name: Install VA-API libraries
+  #       if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
+  #       run: sudo apt-get update && sudo apt-get install -y libva-dev libva-drm2
 
-      - name: Setup native dependencies
-        run: cargo run -p xtask -- setup
-        env:
-          TARGET_TRIPLE: ${{ matrix.settings.target }}
+  #     - name: Setup native dependencies
+  #       run: cargo run -p xtask -- setup
+  #       env:
+  #         TARGET_TRIPLE: ${{ matrix.settings.target }}
 
-      - name: Build server binary
-        run: |
-          cargo build --release --bin sd-server --features sd-core/heif,sd-core/ffmpeg,sd-core/ai --target ${{ matrix.settings.target }}
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+  #     - name: Build server binary
+  #       run: |
+  #         cargo build --release --bin sd-server --features sd-core/heif,sd-core/ffmpeg,sd-core/ai --target ${{ matrix.settings.target }}
+  #       env:
+  #         CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
 
-      - name: Prepare server binary
-        run: |
-          mkdir -p dist
-          cp target/${{ matrix.settings.target }}/release/sd-server dist/sd-server-${{ matrix.settings.platform }}
-          chmod +x dist/sd-server-${{ matrix.settings.platform }}
+  #     - name: Prepare server binary
+  #       run: |
+  #         mkdir -p dist
+  #         cp target/${{ matrix.settings.target }}/release/sd-server dist/sd-server-${{ matrix.settings.platform }}
+  #         chmod +x dist/sd-server-${{ matrix.settings.platform }}
 
-      - name: Generate checksum
-        run: |
-          cd dist
-          sha256sum sd-server-${{ matrix.settings.platform }} > sd-server-${{ matrix.settings.platform }}.sha256
+  #     - name: Generate checksum
+  #       run: |
+  #         cd dist
+  #         sha256sum sd-server-${{ matrix.settings.platform }} > sd-server-${{ matrix.settings.platform }}.sha256
 
-      - name: Create archive
-        run: |
-          cd dist
-          tar -czf sd-server-${{ matrix.settings.platform }}.tar.gz sd-server-${{ matrix.settings.platform }} sd-server-${{ matrix.settings.platform }}.sha256
+  #     - name: Create archive
+  #       run: |
+  #         cd dist
+  #         tar -czf sd-server-${{ matrix.settings.platform }}.tar.gz sd-server-${{ matrix.settings.platform }} sd-server-${{ matrix.settings.platform }}.sha256
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: server-${{ matrix.settings.platform }}
-          path: dist/sd-server-${{ matrix.settings.platform }}.tar.gz
+  #     - name: Upload artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: server-${{ matrix.settings.platform }}
+  #         path: dist/sd-server-${{ matrix.settings.platform }}.tar.gz
 
   # V2 Desktop builds
   desktop-main:
@@ -79,46 +79,46 @@ jobs:
       matrix:
         settings:
           # macOS builds
-          - host: self-hosted
-            target: aarch64-apple-darwin
-            bundles: dmg,app
-            os: darwin
-            arch: aarch64
-          - host: self-hosted
-            target: x86_64-apple-darwin
-            bundles: dmg,app
-            os: darwin
-            arch: x86_64
+          # - host: self-hosted
+          #   target: aarch64-apple-darwin
+          #   bundles: dmg,app
+          #   os: darwin
+          #   arch: aarch64
+          # - host: self-hosted
+          #   target: x86_64-apple-darwin
+          #   bundles: dmg,app
+          #   os: darwin
+          #   arch: x86_64
           # Windows builds
-          - host: blacksmith-4vcpu-windows-2025
+          - host: self-hosted
             target: x86_64-pc-windows-msvc
             bundles: nsis
             os: windows
             arch: x86_64
           # Linux builds
-          - host: blacksmith-8vcpu-ubuntu-2204
-            target: x86_64-unknown-linux-gnu
-            bundles: deb
-            os: linux
-            arch: x86_64
-          - host: blacksmith-8vcpu-ubuntu-2204-arm
-            target: aarch64-unknown-linux-gnu
-            bundles: deb
-            os: linux
-            arch: aarch64
+          # - host: blacksmith-8vcpu-ubuntu-2204
+          #   target: x86_64-unknown-linux-gnu
+          #   bundles: deb
+          #   os: linux
+          #   arch: x86_64
+          # - host: blacksmith-8vcpu-ubuntu-2204-arm
+          #   target: aarch64-unknown-linux-gnu
+          #   bundles: deb
+          #   os: linux
+          #   arch: aarch64
     name: Desktop - Main ${{ matrix.settings.target }}
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - name: Maximize build space
-        if: ${{ runner.os == 'Linux' && matrix.settings.arch != 'aarch64' }}
-        uses: easimon/maximize-build-space@master
-        with:
-          swap-size-mb: 3072
-          root-reserve-mb: 6144
-          remove-dotnet: 'true'
-          remove-codeql: 'true'
-          remove-haskell: 'true'
-          remove-docker-images: 'true'
+      # - name: Maximize build space
+      #   if: ${{ runner.os == 'Linux' && matrix.settings.arch != 'aarch64' }}
+      #   uses: easimon/maximize-build-space@master
+      #   with:
+      #     swap-size-mb: 3072
+      #     root-reserve-mb: 6144
+      #     remove-dotnet: 'true'
+      #     remove-codeql: 'true'
+      #     remove-haskell: 'true'
+      #     remove-docker-images: 'true'
 
       - name: Symlink target to C:\
         if: ${{ runner.os == 'Windows' }}
@@ -130,34 +130,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install VA-API libraries
-        if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
-        run: sudo apt-get update && sudo apt-get install -y libva-dev libva-drm2
+      # - name: Install VA-API libraries
+      #   if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
+      #   run: sudo apt-get update && sudo apt-get install -y libva-dev libva-drm2
 
       - name: Install NASM
         if: ${{ runner.os == 'Windows' }}
         uses: ilammy/setup-nasm@v1
 
-      - name: Install Apple API key
-        if: ${{ runner.os == 'macOS' }}
-        run: |
-          mkdir -p ~/.appstoreconnect/private_keys/
-          cd ~/.appstoreconnect/private_keys/
-          echo ${{ secrets.APPLE_API_KEY_BASE64 }} >> AuthKey_${{ secrets.APPLE_API_KEY }}.p8.base64
-          base64 --decode -i AuthKey_${{ secrets.APPLE_API_KEY }}.p8.base64 -o AuthKey_${{ secrets.APPLE_API_KEY }}.p8
-          rm AuthKey_${{ secrets.APPLE_API_KEY }}.p8.base64
+      # - name: Install Apple API key
+      #   if: ${{ runner.os == 'macOS' }}
+      #   run: |
+      #     mkdir -p ~/.appstoreconnect/private_keys/
+      #     cd ~/.appstoreconnect/private_keys/
+      #     echo ${{ secrets.APPLE_API_KEY_BASE64 }} >> AuthKey_${{ secrets.APPLE_API_KEY }}.p8.base64
+      #     base64 --decode -i AuthKey_${{ secrets.APPLE_API_KEY }}.p8.base64 -o AuthKey_${{ secrets.APPLE_API_KEY }}.p8
+      #     rm AuthKey_${{ secrets.APPLE_API_KEY }}.p8.base64
 
-      - name: Install Codesigning Certificate
-        if: ${{ runner.os == 'macOS' }}
-        uses: apple-actions/import-codesign-certs@v2
-        with:
-          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
-          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      # - name: Install Codesigning Certificate
+      #   if: ${{ runner.os == 'macOS' }}
+      #   uses: apple-actions/import-codesign-certs@v2
+      #   with:
+      #     p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
+      #     p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
 
       - name: Setup System and Rust
         uses: ./.github/actions/setup-system
-        env:
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        # env:
+        #   APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target: ${{ matrix.settings.target }}
@@ -167,27 +167,27 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify native deps were downloaded
-        if: runner.os == 'Linux'
-        run: |
-          echo "=== Native dependencies verification ==="
-          if [ ! -d "apps/.deps/lib" ]; then
-            echo "ERROR: apps/.deps/lib directory does not exist"
-            exit 1
-          fi
+      # - name: Verify native deps were downloaded
+      #   if: runner.os == 'Linux'
+      #   run: |
+      #     echo "=== Native dependencies verification ==="
+      #     if [ ! -d "apps/.deps/lib" ]; then
+      #       echo "ERROR: apps/.deps/lib directory does not exist"
+      #       exit 1
+      #     fi
 
-          echo "Contents of apps/.deps/lib/:"
-          ls -lh apps/.deps/lib/ | head -20
+      #     echo "Contents of apps/.deps/lib/:"
+      #     ls -lh apps/.deps/lib/ | head -20
 
-          SO_COUNT=$(find apps/.deps/lib/ -name "*.so*" | wc -l)
-          echo "Found $SO_COUNT .so files"
+      #     SO_COUNT=$(find apps/.deps/lib/ -name "*.so*" | wc -l)
+      #     echo "Found $SO_COUNT .so files"
 
-          if [ "$SO_COUNT" -eq 0 ]; then
-            echo "ERROR: No .so files found in apps/.deps/lib/"
-            exit 1
-          fi
+      #     if [ "$SO_COUNT" -eq 0 ]; then
+      #       echo "ERROR: No .so files found in apps/.deps/lib/"
+      #       exit 1
+      #     fi
 
-          echo "✓ Native dependencies verified"
+      #     echo "✓ Native dependencies verified"
 
       - name: Build with tauri-action
         uses: tauri-apps/tauri-action@v0
@@ -195,16 +195,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_PROVIDER_SHORT_NAME: ${{ secrets.APPLE_PROVIDER_SHORT_NAME }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          # ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
+          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          # APPLE_PROVIDER_SHORT_NAME: ${{ secrets.APPLE_PROVIDER_SHORT_NAME }}
+          # APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          # APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          CFLAGS: ${{ matrix.settings.arch == 'aarch64' && '-march=armv8.2-a+crypto' || '' }}
-          CXXFLAGS: ${{ matrix.settings.arch == 'aarch64' && '-march=armv8.2-a+crypto' || '' }}
+          # CFLAGS: ${{ matrix.settings.arch == 'aarch64' && '-march=armv8.2-a+crypto' || '' }}
+          # CXXFLAGS: ${{ matrix.settings.arch == 'aarch64' && '-march=armv8.2-a+crypto' || '' }}
           CPATH: ${{ github.workspace }}/apps/.deps/include
           C_INCLUDE_PATH: ${{ github.workspace }}/apps/.deps/include
         with:
@@ -212,11 +212,11 @@ jobs:
           args: --target ${{ matrix.settings.target }} --bundles ${{ matrix.settings.bundles }}
           includeUpdaterJson: true
 
-      - name: Package frontend
-        if: ${{ runner.os == 'Linux' }}
-        run: |
-          set -eux
-          XZ_OPT='-T0 -7' tar -cJf apps/tauri/dist.tar.xz -C apps/tauri/dist .
+      # - name: Package frontend
+      #   if: ${{ runner.os == 'Linux' }}
+      #   run: |
+      #     set -eux
+      #     XZ_OPT='-T0 -7' tar -cJf apps/tauri/dist.tar.xz -C apps/tauri/dist .
 
       - name: Publish Artifacts
         uses: ./.github/actions/publish-artifacts
@@ -226,16 +226,16 @@ jobs:
           target: ${{ matrix.settings.target }}
           profile: release
 
-      - name: Cleanup keychain
-        if: always() && runner.os == 'macOS'
-        run: security delete-keychain signing_temp.keychain || true
+      # - name: Cleanup keychain
+      #   if: always() && runner.os == 'macOS'
+      #   run: security delete-keychain signing_temp.keychain || true
 
   # Create unified release with Server, CLI, and Desktop artifacts
   release:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: blacksmith-4vcpu-ubuntu-2404
     name: Create Release
-    needs: [server-build, desktop-main]
+    needs: [desktop-main]
     permissions:
       contents: write
     steps:
@@ -247,13 +247,13 @@ jobs:
         with:
           draft: true
           files: |
-            cli-*/*
-            server-*/*
-            */*.dmg
+            # cli-*/*
+            # server-*/*
+            # */*.dmg
             */*.exe
             */*.nsis.zip
-            */*.deb
-            */*.tar.xz
-            */*.tar.gz
+            # */*.deb
+            # */*.tar.xz
+            # */*.tar.gz
             */*.sig
             */*.json
